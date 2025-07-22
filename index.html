@@ -6,14 +6,33 @@
 <title>Zakazivanje termina</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; }
-  table { border-collapse: collapse; width: 100%; max-width: 900px; margin: auto; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+  #calendar {
+    overflow-x: auto; /* Omogućava horizontalni scroll na malim ekranima */
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 900px;
+    margin: auto;
+    min-width: 600px; /* sprečava previše skučen prikaz */
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+    white-space: nowrap; /* sprečava lomljenje teksta */
+  }
   th { background-color: #f0f0f0; }
   td.free { background-color: #d4edda; color: #155724; }    /* slobodan termin - zeleno */
   td.occupied { background-color: #f8d7da; color: #721c24; } /* zauzet termin - crveno */
   td.header-time { background-color: #e9ecef; font-weight: bold; }
   h2 { text-align: center; margin-bottom: 10px; }
   .week-container { margin-bottom: 40px; }
+  @media (max-width: 600px) {
+    body {
+      margin: 10px 5px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -55,21 +74,17 @@ function renderCalendar() {
   monday.setDate(today.getDate() - diffToMonday);
 
   for (let w = 0; w < weeksCount; w++) {
-    // Kreiramo kontejner za svaku nedelju (opciono, može i bez njega)
     const weekDiv = document.createElement("div");
     weekDiv.className = "week-container";
 
     const table = document.createElement("table");
 
-    // Header reda za nedelju
     const headerRow = document.createElement("tr");
 
-    // Prvi prazan ćelija za satove
     const emptyTh = document.createElement("th");
     emptyTh.textContent = "Vreme";
     headerRow.appendChild(emptyTh);
 
-    // Dani u nedelji
     for (let i = 0; i < daysOfWeek.length; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i + w * 7);
@@ -79,17 +94,14 @@ function renderCalendar() {
     }
     table.appendChild(headerRow);
 
-    // Redovi sa satima
     for (let hour = workHoursStart; hour <= workHoursEnd; hour++) {
       const tr = document.createElement("tr");
 
-      // Sat u prvom stupcu
       const timeTd = document.createElement("td");
       timeTd.textContent = `${hour}:00`;
       timeTd.className = "header-time";
       tr.appendChild(timeTd);
 
-      // Dani termini za taj sat
       for (let i = 0; i < daysOfWeek.length; i++) {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i + w * 7);
@@ -114,9 +126,8 @@ function renderCalendar() {
   }
 }
 
-// Učitaj zauzete termine sa API-ja
 function loadOccupiedSlots() {
-  fetch('https://script.google.com/macros/s/AKfycbzG-yEMue-zrhDIGlEuPviy2yOqBONJb8fhbx-mXRQbolHiST75ordrTujdzFAXQQzH/exec') // OVDE STAVI TVOJ API URL
+  fetch('https://script.google.com/macros/s/AKfycbzG-yEMue-zrhDIGlEuPviy2yOqBONJb8fhbx-mXRQbolHiST75ordrTujdzFAXQQzH/exec')
     .then(response => response.json())
     .then(data => {
       console.log("Podaci sa API-ja:", data);
@@ -130,9 +141,7 @@ function loadOccupiedSlots() {
     });
 }
 
-// Pokreni odmah učitavanje i prikaz kalendara
 loadOccupiedSlots();
-
 </script>
 
 </body>
