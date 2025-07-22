@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Zakazivanje termina</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  table { border-collapse: collapse; width: 100%; max-width: 900px; margin: auto; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+  th { background-color: #f0f0f0; }
+  td.free { background-color: #d4edda; color: #155724; }    /* slobodan termin - zeleno */
+  td.occupied { background-color: #f8d7da; color: #721c24; } /* zauzet termin - crveno */
+  td.header-time { background-color: #e9ecef; font-weight: bold; }
+  h2 { text-align: center; margin-bottom: 10px; }
+  .week-container { margin-bottom: 40px; }
+</style>
+</head>
+<body>
+
+<h2>Pregled termina (10:00 - 18:00)</h2>
+<div id="calendar"></div>
+
+<script>
+// Radno vreme
+const workHoursStart = 10;
+const workHoursEnd = 18;
+const daysOfWeek = ["Pon", "Uto", "Sre", "Čet", "Pet", "Sub"];
+
+let occupiedSlots = []; // npr. "2025-07-21-10"
+
+function formatDateSR(date) {
+  const d = date.getDate().toString().padStart(2, '0');
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const y = date.getFullYear();
+  return `${d}.${m}.${y}`;
+}
+
+function getDateISO(date) {
+  const y = date.getFullYear();
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const d = date.getDate().toString().padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function renderCalendar() {
+  const container = document.getElementById("calendar");
+  container.innerHTML = ""; // praznimo kontejner
+
+  const weeksCount = 4;
+  const today = new Date();
+  const day = today.getDay();
+  const diffToMonday = (day === 0 ? 6 : day - 1);
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - diffToMonday);
+
+  for (let w = 0; w < weeksCount; w++) {
+    // Kreiramo kontejner za svaku nedelju (opciono, može i bez njega)
+    const weekDiv = document.createElement("div");
+    weekDiv.className = "week-container";
+
+    const table = document.createElement("table");
+
+    // Header reda za nedelju
+    const headerRow = document.createElement("tr");
+
+    // Prvi prazan ćelija za satove
+    const emptyTh = document.createElement("th");
+    emptyTh.textContent = "Vreme";
+    headerRow.appendChild(emptyTh);
+
+    // Dani u nedelji
+    for (let i = 0; i < daysOfWeek.length; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i + w * 7);
+      const th = document.createElement("th");
+      th.textContent = `${daysOfWeek[i]} ${formatDateSR(d)}`;
+      headerRow.appendChild(th);
+    }
+    table.appendChild(headerRow);
+
+    // Redovi sa satima
+    for (let hour = workHoursStart; hour <= workHoursEnd; hour++) {
+      const tr = document.createElement("tr");
+
+      // Sat u prvom stupcu
+      const timeTd = document.createElement("td");
+      timeTd.textContent = `${hour}:00`;
+      timeTd.className = "header-time";
+      tr.appendChild(timeTd);
+
+      // Dani termini za taj sat
+      for (let i = 0; i < daysOfWeek.length; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i + w * 7);
+        const dateISO = getDateISO(d);
+        const slotId = `${dateISO}-${hour}`;
+
+        const td = document.createElement("td");
+        if (occupiedSlots.includes(slotId)) {
+          td.textContent = "Zauzeto";
+          td.className = "occupied";
+        } else {
+          td.textContent = "Slobodno";
+          td.className = "free";
+        }
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+
+    weekDiv.appendChild(table);
+    container.appendChild(weekDiv);
+  }
+}
+
+// Učitaj zauzete termine sa API-ja
+function loadOccupiedSlots() {
+  fetch('https://script.google.com/macros/s/AKfycbzG-yEMue-zrhDIGlEuPviy2yOqBONJb8fhbx-mXRQbolHiST75ordrTujdzFAXQQzH/exec') // OVDE STAVI TVOJ API URL
+    .then(response => response.json())
+    .then(data => {
+      console.log("Podaci sa API-ja:", data);
+      occupiedSlots = data.map(item => `${item.Datum}-${item.Sat}`);
+      console.log("Popunjeni termini:", occupiedSlots);
+      renderCalendar();
+    })
+    .catch(err => {
+      console.error("Greška pri učitavanju API-ja:", err);
+      document.getElementById("calendar").innerHTML = "<p style='color:red; text-align:center;'>Greška pri učitavanju termina.</p>";
+    });
+}
+
+// Pokreni odmah učitavanje i prikaz kalendara
+loadOccupiedSlots();
+
+</script>
+
+</body>
+</html>
