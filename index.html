@@ -2,35 +2,36 @@
 <html lang="sr">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>Zakazivanje termina</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; }
   #calendar {
-    overflow-x: auto; /* Omogućava horizontalni scroll na malim ekranima */
+    width: 100%;
   }
   table {
     border-collapse: collapse;
     width: 100%;
-    max-width: 900px;
     margin: auto;
-    min-width: 600px; /* sprečava previše skučen prikaz */
+    table-layout: fixed; /* Ovo forsira ravnomerno širenje kolona */
   }
   th, td {
     border: 1px solid #ccc;
-    padding: 8px;
+    padding: 6px;
     text-align: center;
-    white-space: nowrap; /* sprečava lomljenje teksta */
+    font-size: 12px; /* Manji font za mobilne ekrane */
+    word-wrap: break-word; /* Prelomi ako je potrebno */
   }
   th { background-color: #f0f0f0; }
-  td.free { background-color: #d4edda; color: #155724; }    /* slobodan termin - zeleno */
-  td.occupied { background-color: #f8d7da; color: #721c24; } /* zauzet termin - crveno */
+  td.free { background-color: #d4edda; color: #155724; }
+  td.occupied { background-color: #f8d7da; color: #721c24; }
   td.header-time { background-color: #e9ecef; font-weight: bold; }
   h2 { text-align: center; margin-bottom: 10px; }
-  .week-container { margin-bottom: 40px; }
+  .week-container { margin-bottom: 30px; }
   @media (max-width: 600px) {
-    body {
-      margin: 10px 5px;
+    th, td {
+      font-size: 10px;
+      padding: 4px;
     }
   }
 </style>
@@ -46,7 +47,7 @@ const workHoursStart = 10;
 const workHoursEnd = 18;
 const daysOfWeek = ["Pon", "Uto", "Sre", "Čet", "Pet", "Sub"];
 
-let occupiedSlots = []; // npr. "2025-07-21-10"
+let occupiedSlots = [];
 
 function formatDateSR(date) {
   const d = date.getDate().toString().padStart(2, '0');
@@ -64,7 +65,7 @@ function getDateISO(date) {
 
 function renderCalendar() {
   const container = document.getElementById("calendar");
-  container.innerHTML = ""; // praznimo kontejner
+  container.innerHTML = "";
 
   const weeksCount = 4;
   const today = new Date();
@@ -130,9 +131,7 @@ function loadOccupiedSlots() {
   fetch('https://script.google.com/macros/s/AKfycbzG-yEMue-zrhDIGlEuPviy2yOqBONJb8fhbx-mXRQbolHiST75ordrTujdzFAXQQzH/exec')
     .then(response => response.json())
     .then(data => {
-      console.log("Podaci sa API-ja:", data);
       occupiedSlots = data.map(item => `${item.Datum}-${item.Sat}`);
-      console.log("Popunjeni termini:", occupiedSlots);
       renderCalendar();
     })
     .catch(err => {
