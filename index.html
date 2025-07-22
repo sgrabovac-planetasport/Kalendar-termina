@@ -81,6 +81,19 @@ function getDateISO(date) {
   return `${y}-${m}-${d}`;
 }
 
+function isToday(date) {
+  const now = new Date();
+  return date.getFullYear() === now.getFullYear() &&
+         date.getMonth() === now.getMonth() &&
+         date.getDate() === now.getDate();
+}
+
+function isPastTodayAfter20h(date) {
+  const now = new Date();
+  if (!isToday(date)) return false;
+  return now.getHours() >= 20;
+}
+
 function renderCalendar() {
   const container = document.getElementById("calendar");
   container.innerHTML = "";
@@ -110,8 +123,8 @@ function renderCalendar() {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i + w * 7);
 
-      // Sakrij dane koji su prošli u tekućoj nedelji
-      if (w === 0 && d < today) continue;
+      // Sakrij prošle dane za prvu nedelju + danas posle 20h
+      if (w === 0 && (d < today || isPastTodayAfter20h(d))) continue;
 
       const th = document.createElement("th");
       th.textContent = `${daysOfWeek[i]} ${formatDateSR(d)}`;
@@ -131,7 +144,7 @@ function renderCalendar() {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i + w * 7);
 
-        if (w === 0 && d < today) continue; // Sakrij prošle dane za prvu nedelju
+        if (w === 0 && (d < today || isPastTodayAfter20h(d))) continue;
 
         const dateISO = getDateISO(d);
         const slotId = `${dateISO}-${hour}`;
