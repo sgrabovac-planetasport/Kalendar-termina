@@ -6,19 +6,20 @@
 <title>Zakazivanje termina</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 10px; }
-  #calendar {
-    width: 100%;
-  }
+  #calendar { width: 100%; }
+
   .week-container {
     margin-bottom: 30px;
-    overflow-x: auto; /* Ovo omogućava horizontalni skrol */
+    overflow-x: auto;
   }
+
   table {
     border-collapse: collapse;
     width: 100%;
-    min-width: 600px; /* Minimalna širina da tabela bude čitljiva */
-    table-layout: fixed; 
+    min-width: 600px;
+    table-layout: fixed;
   }
+
   th, td {
     border: 1px solid #ccc;
     padding: 6px;
@@ -26,11 +27,28 @@
     font-size: 12px;
     word-wrap: break-word;
   }
+
   th { background-color: #f0f0f0; }
   td.free { background-color: #d4edda; color: #155724; }
   td.occupied { background-color: #f8d7da; color: #721c24; }
-  td.header-time { background-color: #e9ecef; font-weight: bold; }
+  td.header-time {
+    background-color: #e9ecef;
+    font-weight: bold;
+    position: sticky;
+    left: 0;
+    background-clip: padding-box;
+    z-index: 2;
+  }
+
+  th.header-time {
+    position: sticky;
+    left: 0;
+    background-color: #e9ecef;
+    z-index: 3;
+  }
+
   h2 { text-align: center; margin-bottom: 10px; }
+
   @media (max-width: 600px) {
     th, td { font-size: 10px; padding: 4px; }
   }
@@ -69,8 +87,9 @@ function renderCalendar() {
 
   const weeksCount = 4;
   const today = new Date();
-  const day = today.getDay();
-  const diffToMonday = (day === 0 ? 6 : day - 1);
+  const currentDay = today.getDay() === 0 ? 7 : today.getDay(); // 1=Pon, 7=Ned
+
+  const diffToMonday = (currentDay === 7 ? 6 : currentDay - 1);
   const monday = new Date(today);
   monday.setDate(today.getDate() - diffToMonday);
 
@@ -84,11 +103,16 @@ function renderCalendar() {
 
     const emptyTh = document.createElement("th");
     emptyTh.textContent = "Vreme";
+    emptyTh.className = "header-time";
     headerRow.appendChild(emptyTh);
 
     for (let i = 0; i < daysOfWeek.length; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i + w * 7);
+
+      // Sakrij dane koji su prošli u tekućoj nedelji
+      if (w === 0 && d < today) continue;
+
       const th = document.createElement("th");
       th.textContent = `${daysOfWeek[i]} ${formatDateSR(d)}`;
       headerRow.appendChild(th);
@@ -106,6 +130,9 @@ function renderCalendar() {
       for (let i = 0; i < daysOfWeek.length; i++) {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i + w * 7);
+
+        if (w === 0 && d < today) continue; // Sakrij prošle dane za prvu nedelju
+
         const dateISO = getDateISO(d);
         const slotId = `${dateISO}-${hour}`;
 
