@@ -1,216 +1,105 @@
 <!DOCTYPE html>
 <html lang="sr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Zakazivanje termina</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 10px; }
-  #calendar { width: 100%; }
-
-  .week-container {
-    margin-bottom: 30px;
-    overflow-x: auto;
-  }
-
-  table {
-    border-collapse: collapse;
-    min-width: 700px;
-    table-layout: fixed;
-    width: 100%;
-  }
-
-  th, td {
-    border: 1px solid #ccc;
-    padding: 6px;
-    text-align: center;
-    font-size: 12px;
-    word-wrap: break-word;
-  }
-
-  th {
-    background-color: #f0f0f0;
-  }
-
-  td.free {
-    background-color: #d4edda;
-    color: #155724;
-  }
-
-  td.occupied {
-    background-color: #f8d7da;
-    color: #721c24;
-  }
-
-  td.header-time {
-    background-color: #e9ecef;
-    font-weight: bold;
-    position: sticky;
-    left: 0;
-    z-index: 2;
-    min-width: 80px;
-    max-width: 80px;
-  }
-
-  th.header-time {
-    position: sticky;
-    left: 0;
-    background-color: #e9ecef;
-    z-index: 3;
-    min-width: 80px;
-    max-width: 80px;
-  }
-
-  td.hidden, th.hidden {
-    visibility: hidden;
-  }
-
-  h2 {
-    text-align: center;
-    margin-bottom: 10px;
-  }
-
-  @media (max-width: 600px) {
-    th, td {
-      font-size: 10px;
-      padding: 4px;
+  <meta charset="UTF-8">
+  <title>Nedelja - Pregled termina</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
     }
-  }
-</style>
+    .calendar {
+      display: grid;
+      grid-template-columns: 100px repeat(7, 1fr);
+      overflow-x: auto;
+    }
+    .day, .time {
+      border: 1px solid #ccc;
+      padding: 8px;
+      min-height: 40px;
+      box-sizing: border-box;
+    }
+    .time {
+      background: #f0f0f0;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+    }
+    .header {
+      background: #ddd;
+      font-weight: bold;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 3;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
 </head>
 <body>
+  <div class="calendar" id="calendar">
+    <!-- Header -->
+    <div class="time header">Vreme</div>
+    <div class="day header" data-day="0">Ponedeljak</div>
+    <div class="day header" data-day="1">Utorak</div>
+    <div class="day header" data-day="2">Sreda</div>
+    <div class="day header" data-day="3">Četvrtak</div>
+    <div class="day header" data-day="4">Petak</div>
+    <div class="day header" data-day="5">Subota</div>
+    <div class="day header" data-day="6">Nedelja</div>
 
-<h2>Pregled slobodnih termina</h2>
-<div id="calendar"></div>
+    <!-- Time slots -->
+    <!-- Radno vreme od 10 do 18h -->
+    <script>
+      const calendar = document.getElementById('calendar');
+      for (let hour = 10; hour < 18; hour++) {
+        const timeCell = document.createElement('div');
+        timeCell.className = 'time';
+        timeCell.textContent = `${hour}:00`;
+        calendar.appendChild(timeCell);
 
-<script>
-const workHoursStart = 10;
-const workHoursEnd = 18;
-const daysOfWeek = ["Pon", "Uto", "Sre", "Čet", "Pet", "Sub"];
-
-let occupiedSlots = [];
-
-function formatDateSR(date) {
-  const d = date.getDate().toString().padStart(2, '0');
-  const m = (date.getMonth() + 1).toString().padStart(2, '0');
-  const y = date.getFullYear();
-  return `${d}.${m}.${y}`;
-}
-
-function getDateISO(date) {
-  const y = date.getFullYear();
-  const m = (date.getMonth() + 1).toString().padStart(2, '0');
-  const d = date.getDate().toString().padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-function isToday(date) {
-  const now = new Date();
-  return date.getFullYear() === now.getFullYear() &&
-         date.getMonth() === now.getMonth() &&
-         date.getDate() === now.getDate();
-}
-
-function isPastTodayAfter20h(date) {
-  const now = new Date();
-  if (!isToday(date)) return false;
-  return now.getHours() >= 20;
-}
-
-function renderCalendar() {
-  const container = document.getElementById("calendar");
-  container.innerHTML = "";
-
-  const weeksCount = 4;
-  const today = new Date();
-  const currentDay = today.getDay() === 0 ? 7 : today.getDay();
-
-  const diffToMonday = currentDay - 1;
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - diffToMonday);
-
-  for (let w = 0; w < weeksCount; w++) {
-    const weekDiv = document.createElement("div");
-    weekDiv.className = "week-container";
-
-    const table = document.createElement("table");
-    const headerRow = document.createElement("tr");
-
-    const timeTh = document.createElement("th");
-    timeTh.textContent = "Vreme";
-    timeTh.className = "header-time";
-    headerRow.appendChild(timeTh);
-
-    const dayVisibility = [];
-
-    for (let i = 0; i < daysOfWeek.length; i++) {
-      const day = new Date(monday);
-      day.setDate(day.getDate() + i + w * 7);
-
-      const hidden = w === 0 && (day < today || isPastTodayAfter20h(day));
-      dayVisibility.push(!hidden);
-
-      const th = document.createElement("th");
-      th.textContent = `${daysOfWeek[i]} ${formatDateSR(day)}`;
-      if (hidden) th.classList.add("hidden");
-      headerRow.appendChild(th);
-    }
-
-    table.appendChild(headerRow);
-
-    for (let hour = workHoursStart; hour <= workHoursEnd; hour++) {
-      const row = document.createElement("tr");
-
-      const timeTd = document.createElement("td");
-      timeTd.textContent = `${hour}:00`;
-      timeTd.className = "header-time";
-      row.appendChild(timeTd);
-
-      for (let i = 0; i < daysOfWeek.length; i++) {
-        const d = new Date(monday);
-        d.setDate(d.getDate() + i + w * 7);
-
-        const dateISO = getDateISO(d);
-        const slotId = `${dateISO}-${hour}`;
-
-        const td = document.createElement("td");
-
-        if (!dayVisibility[i]) {
-          td.classList.add("hidden");
-        } else if (occupiedSlots.includes(slotId)) {
-          td.textContent = "Zauzeto";
-          td.classList.add("occupied");
-        } else {
-          td.textContent = "Slobodno";
-          td.classList.add("free");
+        for (let day = 0; day < 7; day++) {
+          const cell = document.createElement('div');
+          cell.className = 'day';
+          cell.dataset.day = day;
+          // Dummy sadržaj da testiramo prazne/neprazne ćelije
+          // if (Math.random() > 0.7) cell.textContent = 'Termin'; // (ako želiš da testiraš sadržaj)
+          calendar.appendChild(cell);
         }
-
-        row.appendChild(td);
       }
 
-      table.appendChild(row);
-    }
+      // Sakrij prazne kolone (osim headera)
+      for (let day = 0; day < 7; day++) {
+        const cells = Array.from(document.querySelectorAll(`.day[data-day="${day}"]`));
+        const hasContent = cells.some(cell => cell.textContent.trim() !== '');
+        if (!hasContent) {
+          cells.forEach(cell => cell.classList.add('hidden'));
+          document.querySelector(`.header[data-day="${day}"]`).classList.add('hidden');
+        }
+      }
 
-    weekDiv.appendChild(table);
-    container.appendChild(weekDiv);
-  }
-}
+      // Sakrij prošle dane u nedelji ako je prošlo 20:00
+      const now = new Date();
+      const danUNedelji = now.getDay(); // 0 = nedelja, 1 = ponedeljak, ...
+      const sati = now.getHours();
+      const minuti = now.getMinutes();
 
-function loadOccupiedSlots() {
-  fetch('https://script.google.com/macros/s/AKfycbzG-yEMue-zrhDIGlEuPviy2yOqBONJb8fhbx-mXRQbolHiST75ordrTujdzFAXQQzH/exec')
-    .then(response => response.json())
-    .then(data => {
-      occupiedSlots = data.map(item => `${item.Datum}-${item.Sat}`);
-      renderCalendar();
-    })
-    .catch(err => {
-      console.error("Greška pri učitavanju API-ja:", err);
-      document.getElementById("calendar").innerHTML = "<p style='color:red; text-align:center;'>Greška pri učitavanju termina.</p>";
-    });
-}
+      // Ako je prošlo 20:00, sakrij sve prethodne dane
+      const hideDays = (sati >= 20);
 
-loadOccupiedSlots();
-</script>
-
+      if (hideDays) {
+        for (let day = 0; day < danUNedelji; day++) {
+          const cells = Array.from(document.querySelectorAll(`.day[data-day="${(day + 6) % 7}"]`)); 
+          // Pomera dan tako da 0 bude ponedeljak (jer je u našem rasporedu tako)
+          cells.forEach(cell => cell.classList.add('hidden'));
+          const header = document.querySelector(`.header[data-day="${(day + 6) % 7}"]`);
+          if (header) header.classList.add('hidden');
+        }
+      }
+    </script>
+  </div>
 </body>
 </html>
