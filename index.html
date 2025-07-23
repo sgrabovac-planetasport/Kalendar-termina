@@ -15,9 +15,9 @@
 
   table {
     border-collapse: collapse;
-    width: 100%;
-    min-width: 600px;
+    min-width: 700px;
     table-layout: fixed;
+    width: 100%;
   }
 
   th, td {
@@ -28,16 +28,28 @@
     word-wrap: break-word;
   }
 
-  th { background-color: #f0f0f0; }
-  td.free { background-color: #d4edda; color: #155724; }
-  td.occupied { background-color: #f8d7da; color: #721c24; }
+  th {
+    background-color: #f0f0f0;
+  }
+
+  td.free {
+    background-color: #d4edda;
+    color: #155724;
+  }
+
+  td.occupied {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+
   td.header-time {
     background-color: #e9ecef;
     font-weight: bold;
     position: sticky;
     left: 0;
-    background-clip: padding-box;
     z-index: 2;
+    min-width: 80px;
+    max-width: 80px;
   }
 
   th.header-time {
@@ -45,12 +57,24 @@
     left: 0;
     background-color: #e9ecef;
     z-index: 3;
+    min-width: 80px;
+    max-width: 80px;
   }
 
-  h2 { text-align: center; margin-bottom: 10px; }
+  td.hidden, th.hidden {
+    visibility: hidden;
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 10px;
+  }
 
   @media (max-width: 600px) {
-    th, td { font-size: 10px; padding: 4px; }
+    th, td {
+      font-size: 10px;
+      padding: 4px;
+    }
   }
 </style>
 </head>
@@ -60,7 +84,6 @@
 <div id="calendar"></div>
 
 <script>
-// Radno vreme
 const workHoursStart = 10;
 const workHoursEnd = 18;
 const daysOfWeek = ["Pon", "Uto", "Sre", "Čet", "Pet", "Sub"];
@@ -100,9 +123,9 @@ function renderCalendar() {
 
   const weeksCount = 4;
   const today = new Date();
-  const currentDay = today.getDay() === 0 ? 7 : today.getDay(); // 1=Pon, 7=Ned
+  const currentDay = today.getDay() === 0 ? 7 : today.getDay();
 
-  const diffToMonday = (currentDay === 7 ? 6 : currentDay - 1);
+  const diffToMonday = currentDay - 1;
   const monday = new Date(today);
   monday.setDate(today.getDate() - diffToMonday);
 
@@ -111,55 +134,61 @@ function renderCalendar() {
     weekDiv.className = "week-container";
 
     const table = document.createElement("table");
-
     const headerRow = document.createElement("tr");
 
-    const emptyTh = document.createElement("th");
-    emptyTh.textContent = "Vreme";
-    emptyTh.className = "header-time";
-    headerRow.appendChild(emptyTh);
+    const timeTh = document.createElement("th");
+    timeTh.textContent = "Vreme";
+    timeTh.className = "header-time";
+    headerRow.appendChild(timeTh);
+
+    const dayVisibility = [];
 
     for (let i = 0; i < daysOfWeek.length; i++) {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i + w * 7);
+      const day = new Date(monday);
+      day.setDate(day.getDate() + i + w * 7);
 
-      // Sakrij prošle dane za prvu nedelju + danas posle 20h
-      if (w === 0 && (d < today || isPastTodayAfter20h(d))) continue;
+      const hidden = w === 0 && (day < today || isPastTodayAfter20h(day));
+      dayVisibility.push(!hidden);
 
       const th = document.createElement("th");
-      th.textContent = `${daysOfWeek[i]} ${formatDateSR(d)}`;
+      th.textContent = `${daysOfWeek[i]} ${formatDateSR(day)}`;
+      if (hidden) th.classList.add("hidden");
       headerRow.appendChild(th);
     }
+
     table.appendChild(headerRow);
 
     for (let hour = workHoursStart; hour <= workHoursEnd; hour++) {
-      const tr = document.createElement("tr");
+      const row = document.createElement("tr");
 
       const timeTd = document.createElement("td");
       timeTd.textContent = `${hour}:00`;
       timeTd.className = "header-time";
-      tr.appendChild(timeTd);
+      row.appendChild(timeTd);
 
       for (let i = 0; i < daysOfWeek.length; i++) {
         const d = new Date(monday);
-        d.setDate(monday.getDate() + i + w * 7);
-
-        if (w === 0 && (d < today || isPastTodayAfter20h(d))) continue;
+        d.setDate(d.getDate() + i + w * 7);
 
         const dateISO = getDateISO(d);
         const slotId = `${dateISO}-${hour}`;
 
         const td = document.createElement("td");
-        if (occupiedSlots.includes(slotId)) {
+
+        if (!dayVisibility[i]) {
+          td.classList.add("hidden");
+        } else if (occupiedSlots.includes(slotId)) {
           td.textContent = "Zauzeto";
-          td.className = "occupied";
+          td.classList.add("occupied");
         } else {
           td.textContent = "Slobodno";
-          td.className = "free";
+          td.classList.add("free");
         }
-        tr.appendChild(td);
+
+        row.appendChild(td);
       }
-      table.appendChild(tr);
+
+      table.appendChild(row);
     }
 
     weekDiv.appendChild(table);
